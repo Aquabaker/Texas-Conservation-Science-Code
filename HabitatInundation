@@ -1,0 +1,740 @@
+#Steps Completed Prior to running Code
+
+#Set up Folders
+#Created folders for each river site in "destinatiion folder" (whichever folder you want).
+#Be sure to change the file pathways below to match that dstination folder
+# In each of these folders create a Wetted and Wetted_Clip folder
+
+#Unzip Wetted Surface Classification and Rename
+#Unzip the files from wetSurfClassif.DrpbxDownloads.9-27-15
+#Rename using a standard naming convention for coding (i.e. Bryan_19830203_51X5)
+#Save to the Wetted folder within the approriate site folder
+
+#Create Buffer folders for each site in "Wetted" folder
+#Create buffer files 1-4 (Buffers 4=0to2mi, 1=0toHalfmi, 2=Halfto1mi, 3=1to2mi)for entire river length
+    #Created a 2mi, 1mi and half mi buffer for the river the sites are located on.
+       # For TX rivers, I dissolved MajorRivers_dd83.dbf by Name (creates 1 entry for each TX river). Selected that river and then ran the buffer tool to ensure only buffered around that river. 
+    #Erased Half mi buffer from 1 mi buffer to get Halfto1mi buffer
+    #Erased 1 mi from 2 mi buffer to get 1to2mi buffer
+#Clip your river buffers to the particular river length used for each site and save to a common spot. 
+
+#Clip Buffer files created in las step with habitat types using TPWD habitat data found here: https://tpwd.texas.gov/landwater/land/programs/landscape-ecology/ems/
+    # For the TPWD EMST files you may need to merge multiple regions to get the area you need for your river buffers
+#Clipped habitat file (EMST) w. the 4 buffers (Buffer0toHalfmi.shp, BufferHalfto1mi.shp, Buffer1to2mi.shp, Buffer0to2mi.shp) and saved to each site folder 
+#Repeat previous 2 steps for other sites
+#Save these files to the buffer locations you assign below. See #BufferData
+
+#Prepare template folder that data in Step #3 will be appended to
+#Run Steps 1 and 2 for one file. Copy and Paste the final shapefile from "Wetted-Clip" in your "destination folder".
+#Rename it as Final_Output.shp and remove all the data (will be used as a template)
+
+#_______________________________________________________________________________________
+
+# Import modules
+import datetime, glob, os, urllib, zipfile, arcpy
+
+# Print start time
+starttime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+strstarttime = str(starttime)
+print "Process started at: " + strstarttime
+
+#Note
+#Sites 1=Gonzales, 2=Hearne, 3=SFASP
+#Stats  Connected = 0, Connected+Unconnceted = 2
+#Buffers 4=0to2mi, 1=0toHalfmi, 2=Halfto1mi, 3=1to2mi
+
+#Assign output
+Output = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Final_Output1.shp"
+
+# Clear data from previous run
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected+Unconnected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected+Unconnected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+    
+data = glob.glob(r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected+Unconnected\Wetted_ESMT\*")
+for f in data:
+    os.remove(f)
+    
+print "Cleared old Wetted ESMT files"
+
+
+#Run data for Gonzales site  --------------------------------------------------------------------------------------------------------
+print "Gonzales Site"
+SITE = "1"
+
+#Buffer Data
+Buffer4 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\BufferGap_ESMT\4Clip_BGrip_Gonzales_Buffer0to2miFinal.shp"
+Buffer1 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\BufferGap_ESMT\1Clip_BGrip_Gonzales_Buffer0toHmiFinal.shp"
+Buffer2 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\BufferGap_ESMT\2Clip_BGrip_Gonzales_BufferHto1miFinal.shp"
+Buffer3 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\BufferGap_ESMT\3Clip_BGrip_Gonzales_Buffer1to2miFinal.shp"
+
+#Connected Data -----------------------------------------------------------------------------------------
+print "Connected Data"
+STATUS = "0"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[9:17]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+
+    #Clip habitat inundation buffers (EMST) with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+#Connected+Unconnected Data -----------------------------------------------------------------------------------------
+print "Connected+Unconnected Data"
+STATUS = "2"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected+Unconnected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Gonzales\Connected+Unconnected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[9:17]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+
+
+
+#Run data for Hearne site  --------------------------------------------------------------------------------------------------------
+print "Hearne Site"
+SITE = "2"
+
+#Buffer Data
+Buffer4 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\BufferGap_ESMT\4Clip_BGrip_Hearne_Buffer0to2miFinal.shp"
+Buffer1 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\BufferGap_ESMT\1Clip_BGrip_Hearne_Buffer0toHmiFinal.shp"
+Buffer2 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\BufferGap_ESMT\2Clip_BGrip_Hearne_BufferHto1miFinal.shp"
+Buffer3 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\BufferGap_ESMT\3Clip_BGrip_Hearne_Buffer1to2miFinal.shp"
+
+
+#Connected Data -----------------------------------------------------------------------------------------
+print "Connected Data"
+STATUS = "0"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[7:15]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+#Connected+Unconnected Data -----------------------------------------------------------------------------------------
+print "Connected+Unconnected Data"
+STATUS = "2"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected+Unconnected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\Hearne\Connected+Unconnected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[7:15]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+
+#Run data for SFASP site  --------------------------------------------------------------------------------------------------------
+print "SFASP Site"
+SITE = "3"
+
+#Buffer Data
+Buffer4 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\BufferGap_ESMT\4Clip_BGrip_SFASP_Buffer0to2miFinal.shp"
+Buffer1 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\BufferGap_ESMT\1Clip_BGrip_SFASP_Buffer0toHmiFinal.shp"
+Buffer2 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\BufferGap_ESMT\2Clip_BGrip_SFASP_BufferHto1miFinal.shp"
+Buffer3 = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\BufferGap_ESMT\3Clip_BGrip_SFASP_Buffer1to2miFinal.shp"
+
+
+#Connected Data -----------------------------------------------------------------------------------------
+print "Connected Data"
+STATUS = "0"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[6:14]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+#Connected+Unconnected Data -----------------------------------------------------------------------------------------
+print "Connected+Unconnected Data"
+STATUS = "2"
+arcpy.env.workspace = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected+Unconnected\Wetted"
+
+#Export path
+ExportPath = r"C:\Users\dmbake01\Google Drive\ECA\ClassifBuffers\SFASP\Connected+Unconnected\Wetted_ESMT"
+
+# Step 1: Clip   -------------------------------------------------------------
+fcList = arcpy.ListFeatureClasses()
+for fc in fcList:
+    CurrentFile = fc
+    DATE = CurrentFile[6:14]
+    print "Date: " + DATE
+    
+    #Buffer0to2mi -------------------------------------------------------------
+    print "Buffer0to2mi"
+    BUFFER = "4"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer4, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer0toHalfmi -------------------------------------------------------------
+    print "Buffer0toHalfmi"
+    BUFFER = "1"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip0toHmi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer1, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #BufferHalfto1mi -------------------------------------------------------------
+    print "BufferHalfto1mi"
+    BUFFER = "2"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\ClipHto1mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer2, CurrentFile, OutFile)
+
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+
+    #Buffer1to2mi -------------------------------------------------------------
+    print "Buffer1to2mi"
+    BUFFER = "3"
+    
+    #Clip ESMT with wetted file
+    OutFile = ExportPath + "\Clip1to2mi_" + CurrentFile
+    arcpy.Clip_analysis(Buffer3, CurrentFile, OutFile)
+    
+    #Add fields to table
+    arcpy.AddField_management(OutFile, "SITE", "LONG")
+    arcpy.CalculateField_management(OutFile, "SITE", SITE)
+    arcpy.AddField_management(OutFile, "STATUS", "LONG")
+    arcpy.CalculateField_management(OutFile, "STATUS", STATUS)
+    arcpy.AddField_management(OutFile, "BUFFER", "LONG")
+    arcpy.CalculateField_management(OutFile, "BUFFER", BUFFER)
+    arcpy.AddField_management(OutFile, "DATE", "LONG")
+    arcpy.CalculateField_management(OutFile, "DATE", DATE)
+    del OutFile
+    del CurrentFile
+
+#Append
+# Step 3: Append data to output file
+arcpy.env.workspace = ExportPath
+fcList = arcpy.ListFeatureClasses()
+#for fc in fcList:
+print fcList
+arcpy.Append_management(fcList, Output, "NO_TEST")
+print "Step 3: Append "
+del fcList
+del ExportPath
+del STATUS
+
+
+# Print end time
+endtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+strendtime = str(endtime)
